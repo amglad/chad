@@ -1,0 +1,20 @@
+# systemd service: starts Chad automatically when the Pi boots.
+# Installed by scripts/install_service.sh, which fills in USER and DIR.
+[Unit]
+Description=Chad voice assistant
+# Start once the network and sound are up (Chad still starts without Wi-Fi).
+Wants=network-online.target
+After=network-online.target sound.target
+
+[Service]
+User=USER
+WorkingDirectory=DIR
+ExecStart=DIR/.venv/bin/python DIR/chad.py
+# Print output straight away so `journalctl` shows it live.
+Environment=PYTHONUNBUFFERED=1
+# If Chad crashes (or the USB speaker isn't ready yet), try again in 5 seconds.
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

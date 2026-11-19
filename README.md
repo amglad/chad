@@ -71,3 +71,17 @@ Chad's voice comes from Piper (free, runs on the Pi) with an alien effect from `
 python volume.py 60   # set to 60% (0 to 100) and save it
 python volume.py      # show the current volume
 ```
+
+## Start Chad automatically at boot
+
+```bash
+bash scripts/install_service.sh
+```
+
+Chad then starts on every power-up and plays a UFO chime when he's ready.
+While the service is running, stop it before running `chad.py` or the test scripts by hand
+(they'd fight over the mic and button): `sudo systemctl stop chad`.
+
+- Watch the output: `journalctl -u chad -f`
+- After `git pull`: `sudo systemctl restart chad`
+- Turn auto-start off: `sudo systemctl disable --now chad`

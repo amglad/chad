@@ -13,6 +13,7 @@ from gpiozero import Button  # noqa: E402
 
 import audio  # noqa: E402
 import brain  # noqa: E402
+import sounds  # noqa: E402
 
 BUTTON_PIN = 17      # GPIO17 = physical pin 11
 MIN_SECONDS = 0.4    # ignore accidental taps
@@ -28,6 +29,7 @@ def main() -> None:
     brain.warm_up()
 
     print(f"Chad is ready (chat: {brain.CHAT_MODEL}). Hold the button and talk.")
+    audio.play(speaker, sounds.ready_chime())  # UFO chime = ready to talk
     while True:
         button.wait_for_press()
         recorder.start()
