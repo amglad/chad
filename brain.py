@@ -93,6 +93,7 @@ def speak(text: str, out_path: str) -> None:
 def _speak_gemini(model: str, text: str, out_path: str) -> None:
     # Gemini's newer voice models use Google's "Interactions" API.
     interaction = client.interactions.create(
+        api_version="v1beta",  # the voice models are only on Google's beta API
         model=model,
         input=[{
             "type": "user_input",

@@ -9,9 +9,11 @@ from dotenv import load_dotenv
 from google import genai
 
 load_dotenv()
-client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
-
-for model in client.models.list():
-    name = model.name.removeprefix("models/")
-    if "flash" in name or "tts" in name:
-        print(name)
+for api_version in ["v1", "v1beta"]:
+    print(f"--- {api_version} ---")
+    beta = genai.Client(
+        api_key=os.environ["GEMINI_API_KEY"],
+        http_options={"api_version": api_version},
+    )
+    for model in beta.models.list():
+        print(model.name.removeprefix("models/"))
