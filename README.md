@@ -3,7 +3,7 @@
 A voice-only talking action figure. Hold the button, talk, let go, and Chad answers out loud.
 
 **Hardware:** Raspberry Pi 3 Model B, USB microphone, USB speaker, push button on GPIO17 (pin 11), power bank.
-**Software:** Python on Raspberry Pi OS, with a cloud AI for speech-to-text, chat, and text-to-speech.
+**Software:** Python on Raspberry Pi OS, with Google Gemini for hearing, answering (with Google Search) and talking.
 
 ## How it will work (hold-to-talk)
 
@@ -16,13 +16,13 @@ A voice-only talking action figure. Hold the button, talk, let go, and Chad answ
 
 ```bash
 sudo apt update
-sudo apt install -y git python3-venv alsa-utils
+sudo apt install -y git python3-venv alsa-utils espeak-ng
 git clone <this repo> ~/chad
 cd ~/chad
 python3 -m venv --system-site-packages .venv   # project Python that can still see the Pi's GPIO library
 source .venv/bin/activate      # turn it on (do this each new terminal)
 pip install -r requirements.txt
-cp .env.example .env           # then put your API key in .env
+cp .env.example .env           # then put your Gemini API key in .env
 ```
 
 ## Test the audio
@@ -55,3 +55,12 @@ python scripts/button_test.py
 ```
 
 Hold the button and talk, let go, and it plays your voice back. Ctrl+C quits.
+
+## Run Chad
+
+1. Get a free Gemini API key at https://aistudio.google.com/apikey and put it in `.env` as `GEMINI_API_KEY=...`.
+2. `source .venv/bin/activate` then `python chad.py`.
+3. Hold the button, ask something, let go.
+
+Files: `chad.py` is the main loop, `brain.py` talks to Gemini (the only file to change to switch AI providers), `audio.py` handles the mic and speaker.
+If Gemini's voice fails (for example, a free-tier limit), Chad falls back to the free offline `espeak-ng` voice.
