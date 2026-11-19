@@ -64,3 +64,10 @@ Hold the button and talk, let go, and it plays your voice back. Ctrl+C quits.
 
 Files: `chad.py` is the main loop, `brain.py` talks to Gemini (the only file to change to switch AI providers), `audio.py` handles the mic and speaker.
 Chad's voice comes from Piper (free, runs on the Pi) with an alien effect from `sox`. Change `VOICE_EFFECT` in `.env` to try other sounds. If Piper fails, Chad falls back to the `espeak-ng` robot voice.
+
+## Speaker volume
+
+```bash
+python volume.py 60   # set to 60% (0 to 100) and save it
+python volume.py      # show the current volume
+```
