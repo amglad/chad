@@ -5,6 +5,7 @@ think(wav_bytes) -> reply text     (hears the question and answers it)
 speak(text, out_path)              (turns the reply into a WAV file)
 """
 
+import base64
 import os
 import subprocess
 import wave
@@ -21,6 +22,7 @@ THINKING_LEVEL = os.getenv(
 )
 TTS_ENGINE = os.getenv("TTS_ENGINE", "gemini")  # "gemini" or "espeak"
 VOICE = os.getenv("VOICE", "Puck")  # Gemini voice name
+VOICE_STYLE = os.getenv("VOICE_STYLE", "upbeat, energetic and friendly")
 USE_SEARCH = os.getenv("USE_SEARCH", "true").lower() == "true"
 
 PERSONALITY = os.getenv(
@@ -78,19 +80,23 @@ def speak(text: str, out_path: str) -> None:
 
 
 def _speak_gemini(text: str, out_path: str) -> None:
-    response = client.models.generate_content(
+    # Gemini's newer voice models use Google's "Interactions" API.
+    interaction = client.interactions.create(
         model=TTS_MODEL,
-        contents=f"Say in an upbeat, friendly voice: {text}",
-        config=types.GenerateContentConfig(
-            response_modalities=["AUDIO"],
-            speech_config=types.SpeechConfig(
-                voice_config=types.VoiceConfig(
-                    prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=VOICE)
-                )
-            ),
-        ),
+        input=[{
+            "type": "user_input",
+            "content": [{
+                "type": "text",
+                "text": text,
+                "annotations": [{"type": "speech_metadata", "style": VOICE_STYLE}],
+            }],
+        }],
+        response_format={"type": "audio"},
+        generation_config={"speech_config": [{"voice": VOICE}]},
     )
-    audio = response.candidates[0].content.parts[0].inline_data.data
+    audio = interaction.output_audio.data
+    if isinstance(audio, str):  # the audio arrives as base64 text
+        audio = base64.b64decode(audio)
     if audio[:4] == b"RIFF":  # already a complete WAV file
         with open(out_path, "wb") as f:
             f.write(audio)

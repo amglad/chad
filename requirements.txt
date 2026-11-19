@@ -1,6 +1,6 @@
 # Loads API keys from the .env file
 python-dotenv>=1.0
 # Google Gemini SDK (chat with Google Search, and text-to-speech)
-google-genai>=1.0
+google-genai>=3.6
 # Note: gpiozero (for the button) comes with Raspberry Pi OS. Create the venv
 # with --system-site-packages so Python can see it (see README).

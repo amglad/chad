@@ -35,7 +35,8 @@ def main() -> None:
         # No -d (duration), so arecord keeps going until we stop it.
         recorder = subprocess.Popen(
             ["arecord", "-q", "-D", f"plughw:{mic},0",
-             "-f", "S16_LE", "-r", "16000", "-c", "1", RECORDING]
+             "-f", "S16_LE", "-r", "16000", "-c", "1", RECORDING],
+            stderr=subprocess.DEVNULL,  # hide the harmless "Interrupted" note
         )
 
         button.wait_for_release()

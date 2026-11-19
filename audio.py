@@ -29,7 +29,9 @@ class Recorder:
         # No -d (duration), so arecord runs until we stop it.
         self.process = subprocess.Popen(
             ["arecord", "-q", "-D", f"plughw:{self.card},0",
-             "-f", "S16_LE", "-r", "16000", "-c", "1", self.path]
+             "-f", "S16_LE", "-r", "16000", "-c", "1", self.path],
+            # Hide arecord's harmless "Interrupted system call" note on stop.
+            stderr=subprocess.DEVNULL,
         )
 
     def stop(self) -> None:
