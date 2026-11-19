@@ -52,8 +52,13 @@ def main() -> None:
 
     # -M uses a volume scale that matches how loud it sounds to your ears.
     subprocess.run(
-        ["amixer", "-q", "-M", "-c", str(card), "sset", control, f"{level}%", "unmute"],
+        ["amixer", "-q", "-M", "-c", str(card), "sset", control, f"{level}%"],
         check=True,
+    )
+    # Make sure it isn't muted (some speakers don't have a mute switch; that's fine).
+    subprocess.run(
+        ["amixer", "-q", "-c", str(card), "sset", control, "unmute"],
+        stderr=subprocess.DEVNULL, check=False,
     )
     # Save the mixer settings so they're restored after a reboot.
     subprocess.run(["sudo", "alsactl", "store"], check=False)
