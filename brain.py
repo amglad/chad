@@ -62,6 +62,15 @@ PERSONALITY = os.getenv(
     "say so playfully and ask them to try again.",
 )
 
+# Gemini adds this word to its reply when you say goodnight, so chad.py knows
+# to shut down. (Gemini hears the audio directly, so it does the listening.)
+SHUTDOWN_WORD = "[GOODNIGHT]"
+SHUTDOWN_RULE = (
+    " Only if the user is clearly saying goodnight to you, or asking you to "
+    "shut down or power off, reply with a short, warm goodbye and end your "
+    f"reply with {SHUTDOWN_WORD}. Never use {SHUTDOWN_WORD} otherwise."
+)
+
 client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
 
@@ -81,7 +90,7 @@ def think(wav_bytes: bytes) -> str:
 
 def _ask(wav_bytes: bytes, with_search: bool) -> str:
     config = types.GenerateContentConfig(
-        system_instruction=PERSONALITY,
+        system_instruction=PERSONALITY + SHUTDOWN_RULE,
         thinking_config=types.ThinkingConfig(thinking_level=THINKING_LEVEL),
     )
     if with_search:

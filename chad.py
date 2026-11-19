@@ -3,6 +3,7 @@
 Run from the repo folder with the venv on:  python chad.py   (Ctrl+C to quit)
 """
 
+import subprocess
 import time
 
 from dotenv import load_dotenv
@@ -19,6 +20,19 @@ BUTTON_PIN = 17      # GPIO17 = physical pin 11
 MIN_SECONDS = 0.4    # ignore accidental taps
 QUESTION_WAV = "/tmp/chad_question.wav"
 ANSWER_WAV = "/tmp/chad_answer.wav"
+
+
+def shut_down(speaker: int) -> None:
+    """Say goodbye with the take-off chime and power off the Pi safely."""
+    print("Goodnight! Shutting down...")
+    subprocess.run(["sync"])  # make sure everything is written to the SD card
+    audio.play(speaker, sounds.goodbye_chime())
+    # -n: fail instead of waiting for a password nobody can type.
+    result = subprocess.run(["sudo", "-n", "systemctl", "poweroff"])
+    if result.returncode != 0:
+        print("Couldn't power off (sudo needs a password?). Staying on.")
+        return
+    raise SystemExit(0)
 
 
 def main() -> None:
@@ -47,11 +61,15 @@ def main() -> None:
             t0 = time.monotonic()
             with open(QUESTION_WAV, "rb") as f:
                 reply = brain.think(f.read())
+            goodnight = brain.SHUTDOWN_WORD in reply
+            reply = reply.replace(brain.SHUTDOWN_WORD, "").strip()
             print(f"Chad: {reply}")
             t1 = time.monotonic()
             brain.speak(reply, ANSWER_WAV)
             print(f"(think {t1 - t0:.1f}s, voice {time.monotonic() - t1:.1f}s)")
             audio.play(speaker, ANSWER_WAV)
+            if goodnight:
+                shut_down(speaker)
         except Exception as error:
             # Keep Chad running even if one request fails (Wi-Fi blip, quota, ...).
             print(f"Something went wrong: {error}")

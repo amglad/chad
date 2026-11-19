@@ -1,7 +1,7 @@
 """Little sound effects for Chad, made in code (no sound files to download).
 
-ready_chime() returns the path to a UFO-style "I'm ready" chime, creating it
-the first time. Run `python sounds.py` to hear it.
+ready_chime() and goodbye_chime() return paths to UFO-style chimes, creating
+them the first time. Run `python sounds.py` to hear both.
 """
 
 import math
@@ -13,19 +13,18 @@ RATE = 22050  # samples per second
 SOUNDS_DIR = Path(__file__).parent / "sounds"
 
 
-def _ufo_chime():
-    """A calm, spooky UFO slowly coming down to land."""
-    seconds = 3.0
+def _ufo_chime(start_hz=1100, end_hz=400, seconds=3.0):
+    """A calm, spooky UFO. High-to-low = landing, low-to-high = taking off."""
     total = int(seconds * RATE)
     out = [0.0] * total
     phase_a = phase_b = phase_hum = 0.0
 
     for i in range(total):
         t = i / RATE
-        # Glide down from 1100 Hz to 400 Hz, slowing as it "lands" (ease-out).
-        progress = min(1.0, t / 2.4)
+        # Glide from start_hz to end_hz, slowing down at the end (ease-out).
+        progress = min(1.0, t / (seconds * 0.8))
         ease = 1 - (1 - progress) ** 3
-        pitch = 1100 * (400 / 1100) ** ease
+        pitch = start_hz * (end_hz / start_hz) ** ease
         # Slow, wide wobble like an old sci-fi theremin.
         pitch *= 1 + 0.025 * math.sin(2 * math.pi * 5 * t)
 
@@ -61,15 +60,29 @@ def _write_wav(path, samples):
         f.writeframes(b"".join(struct.pack("<h", int(s * 32767)) for s in samples))
 
 
-def ready_chime() -> str:
-    path = SOUNDS_DIR / "ready.wav"
+def _cached(name, make):
+    path = SOUNDS_DIR / name
     # Rebuild if missing, or if this file changed since it was made.
     if not path.exists() or path.stat().st_mtime < Path(__file__).stat().st_mtime:
-        _write_wav(path, _ufo_chime())
+        _write_wav(path, make())
     return str(path)
+
+
+def ready_chime() -> str:
+    """UFO landing: Chad has booted and is ready to talk."""
+    return _cached("ready.wav", _ufo_chime)
+
+
+def goodbye_chime() -> str:
+    """UFO taking off and fading away: Chad is shutting down."""
+    return _cached("goodbye.wav", lambda: _ufo_chime(400, 1100, 3.0))
 
 
 if __name__ == "__main__":
     from audio import find_usb_card, play
 
-    play(find_usb_card("aplay"), ready_chime())
+    speaker = find_usb_card("aplay")
+    print("Ready chime...")
+    play(speaker, ready_chime())
+    print("Goodbye chime...")
+    play(speaker, goodbye_chime())

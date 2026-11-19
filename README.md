@@ -85,3 +85,9 @@ While the service is running, stop it before running `chad.py` or the test scrip
 - Watch the output: `journalctl -u chad -f`
 - After `git pull`: `sudo systemctl restart chad`
 - Turn auto-start off: `sudo systemctl disable --now chad`
+
+## Goodnight (voice shutdown)
+
+Hold the button and say "Goodnight, Chad". He says goodbye, plays a UFO take-off chime
+and powers the Pi off. Wait for the green light to stop flickering before unplugging.
+(This needs Wi-Fi, since Gemini is the one listening.)
