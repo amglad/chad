@@ -19,7 +19,7 @@ sudo apt update
 sudo apt install -y git python3-venv alsa-utils
 git clone <this repo> ~/chad
 cd ~/chad
-python3 -m venv .venv          # a private Python install for this project
+python3 -m venv --system-site-packages .venv   # project Python that can still see the Pi's GPIO library
 source .venv/bin/activate      # turn it on (do this each new terminal)
 pip install -r requirements.txt
 cp .env.example .env           # then put your API key in .env
@@ -45,3 +45,13 @@ It records 3 seconds and plays it back.
 ## Secrets
 
 API keys live in `.env`, which git ignores. Never commit it. `.env.example` shows what goes in it.
+
+## Test the button
+
+With the button wired (red pin 1, black pin 9, white pin 11):
+
+```bash
+python scripts/button_test.py
+```
+
+Hold the button and talk, let go, and it plays your voice back. Ctrl+C quits.
