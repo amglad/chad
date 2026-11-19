@@ -55,7 +55,7 @@ EFFECT_PRESETS = {
     "wobbly": "pitch 500 tremolo 6 40 chorus 0.6 0.9 50 0.4 0.25 2 -t",
     "tiny": "pitch 700 echo 0.8 0.8 20 0.3",
 }
-VOICE_EFFECT = os.getenv("VOICE_EFFECT", "alien")
+VOICE_EFFECT = os.getenv("VOICE_EFFECT", "deep")
 VOICE = os.getenv("VOICE", "Puck")  # Gemini voice name
 VOICE_STYLE = os.getenv("VOICE_STYLE", "upbeat, energetic and friendly")
 USE_SEARCH = os.getenv("USE_SEARCH", "true").lower() == "true"
