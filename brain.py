@@ -14,7 +14,12 @@ from google import genai
 from google.genai import types
 
 CHAT_MODEL = os.getenv("CHAT_MODEL", "gemini-3.5-flash-lite")
-TTS_MODEL = os.getenv("TTS_MODEL", "gemini-3.8-flash-lite-tts")
+# Voice models to try, in order. The first one that works is remembered.
+# Set TTS_MODEL in .env to force one (run scripts/list_models.py to see yours).
+TTS_MODELS = (
+    [os.environ["TTS_MODEL"]] if os.getenv("TTS_MODEL") else
+    ["gemini-3.8-flash-tts", "gemini-3.1-flash-tts-preview", "gemini-3.8-flash-lite-tts"]
+)
 # How hard the model "thinks" before answering. Less = faster replies.
 # Flash-Lite models accept "minimal"; gemini-3.8-flash needs "low" or higher.
 THINKING_LEVEL = os.getenv(
@@ -70,19 +75,25 @@ def _ask(wav_bytes: bytes, with_search: bool) -> str:
 
 def speak(text: str, out_path: str) -> None:
     """Write Chad's spoken reply to a WAV file. Falls back to espeak on errors."""
+    global TTS_MODELS
     if TTS_ENGINE == "gemini":
-        try:
-            _speak_gemini(text, out_path)
-            return
-        except Exception as error:  # e.g. quota hit or model renamed
-            print(f"(Gemini voice failed: {error}. Using espeak instead.)")
+        for model in list(TTS_MODELS):
+            try:
+                _speak_gemini(model, text, out_path)
+                TTS_MODELS = [model]  # remember the one that worked
+                return
+            except Exception as error:  # e.g. quota hit or model renamed
+                print(f"(Gemini voice {model} failed: {error})")
+                if "not found" in str(error).lower() and len(TTS_MODELS) > 1:
+                    TTS_MODELS.remove(model)  # don't try a missing model again
+        print("(Using espeak instead.)")
     _speak_espeak(text, out_path)
 
 
-def _speak_gemini(text: str, out_path: str) -> None:
+def _speak_gemini(model: str, text: str, out_path: str) -> None:
     # Gemini's newer voice models use Google's "Interactions" API.
     interaction = client.interactions.create(
-        model=TTS_MODEL,
+        model=model,
         input=[{
             "type": "user_input",
             "content": [{
