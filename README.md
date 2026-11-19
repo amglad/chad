@@ -34,7 +34,7 @@ arecord -l   # microphones
 aplay -l     # speakers
 ```
 
-Put those numbers at the top of `scripts/audio_test.py`, then:
+The script finds the USB cards by itself. To force specific ones, set `MIC_CARD` / `SPEAKER_CARD` at the top of `scripts/audio_test.py`. Run:
 
 ```bash
 python scripts/audio_test.py
