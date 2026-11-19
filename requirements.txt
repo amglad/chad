@@ -2,5 +2,7 @@
 python-dotenv>=1.0
 # Google Gemini SDK (chat with Google Search, and text-to-speech)
 google-genai>=3.6
+# Piper: free offline voice that runs on the Pi (needs 64-bit Pi OS)
+piper-tts>=1.3
 # Note: gpiozero (for the button) comes with Raspberry Pi OS. Create the venv
 # with --system-site-packages so Python can see it (see README).

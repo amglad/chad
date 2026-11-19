@@ -3,12 +3,17 @@ later only means changing this file.
 
 think(wav_bytes) -> reply text     (hears the question and answers it)
 speak(text, out_path)              (turns the reply into a WAV file)
+
+Chad's voice is made on the Pi itself with Piper (free, offline), then run
+through the `sox` audio tool to make it sound like an alien.
 """
 
 import base64
 import os
 import subprocess
+import sys
 import wave
+from pathlib import Path
 
 from google import genai
 from google.genai import types
@@ -25,14 +30,33 @@ TTS_MODELS = (
 THINKING_LEVEL = os.getenv(
     "THINKING_LEVEL", "minimal" if "lite" in CHAT_MODEL else "low"
 )
-TTS_ENGINE = os.getenv("TTS_ENGINE", "gemini")  # "gemini" or "espeak"
+TTS_ENGINE = os.getenv("TTS_ENGINE", "piper")  # "piper", "gemini" or "espeak"
+
+# Piper voice (list: https://rhasspy.github.io/piper-samples/). "-low" voices
+# are faster on a Pi 3, "-medium" ones sound nicer.
+PIPER_VOICE = os.getenv("PIPER_VOICE", "en_US-lessac-medium")
+SPEED = float(os.getenv("SPEED", "1.0"))  # bigger = slower speech
+VOICES_DIR = Path(__file__).parent / "voices"
+
+# Sound effects applied with sox after the voice is made. Pick a preset name,
+# or write your own sox effect list. "pitch" is in cents (100 = one semitone).
+EFFECT_PRESETS = {
+    "none": "",
+    "alien": "pitch 400 chorus 0.6 0.9 50 0.4 0.25 2 -t",
+    "wobbly": "pitch 500 tremolo 6 40 chorus 0.6 0.9 50 0.4 0.25 2 -t",
+    "deep": "pitch -350 phaser 0.89 0.85 1 0.24 2 -t reverb 30",
+    "tiny": "pitch 700 echo 0.8 0.8 20 0.3",
+}
+VOICE_EFFECT = os.getenv("VOICE_EFFECT", "alien")
 VOICE = os.getenv("VOICE", "Puck")  # Gemini voice name
 VOICE_STYLE = os.getenv("VOICE_STYLE", "upbeat, energetic and friendly")
 USE_SEARCH = os.getenv("USE_SEARCH", "true").lower() == "true"
 
 PERSONALITY = os.getenv(
     "PERSONALITY",
-    "You are Chad, a small, upbeat action figure who talks with people out loud. "
+    "You are Chad, a small, squishy, friendly alien who crash-landed on Earth "
+    "and now lives as a plush toy. You're curious about humans and their odd "
+    "habits, and you sometimes compare things to your home planet. "
     "The user's message is a voice recording. Answer what they said in one to "
     "three short, casual sentences, because your reply will be spoken aloud. "
     "No lists, markdown, emoji, or URLs. If you couldn't make out the audio, "
@@ -73,10 +97,31 @@ def _ask(wav_bytes: bytes, with_search: bool) -> str:
     return (response.text or "").strip() or "Huh, I've got nothing. Try again?"
 
 
+def warm_up() -> None:
+    """Load the voice ahead of time so the first answer isn't extra slow."""
+    if TTS_ENGINE == "piper":
+        try:
+            _load_piper()
+        except Exception as error:
+            print(f"(Couldn't load Piper voice: {error})")
+
+
 def speak(text: str, out_path: str) -> None:
-    """Write Chad's spoken reply to a WAV file. Falls back to espeak on errors."""
+    """Write Chad's spoken reply to a WAV file, with the voice effect applied."""
+    raw_path = out_path + ".raw.wav"
+    _make_voice(text, raw_path)
+    _apply_effect(raw_path, out_path)
+
+
+def _make_voice(text: str, out_path: str) -> None:
     global TTS_MODELS
-    if TTS_ENGINE == "gemini":
+    if TTS_ENGINE == "piper":
+        try:
+            _speak_piper(text, out_path)
+            return
+        except Exception as error:
+            print(f"(Piper voice failed: {error})")
+    elif TTS_ENGINE == "gemini":
         for model in list(TTS_MODELS):
             try:
                 _speak_gemini(model, text, out_path)
@@ -86,8 +131,55 @@ def speak(text: str, out_path: str) -> None:
                 print(f"(Gemini voice {model} failed: {error})")
                 if "not found" in str(error).lower() and len(TTS_MODELS) > 1:
                     TTS_MODELS.remove(model)  # don't try a missing model again
+    if TTS_ENGINE != "espeak":
         print("(Using espeak instead.)")
     _speak_espeak(text, out_path)
+
+
+def _apply_effect(in_path: str, out_path: str) -> None:
+    effect = EFFECT_PRESETS.get(VOICE_EFFECT, VOICE_EFFECT)
+    if effect:
+        # "gain -n -1" evens out the volume after the effects (stops clipping).
+        try:
+            result = subprocess.run(
+                ["sox", in_path, out_path, *effect.split(), "gain", "-n", "-1"],
+                capture_output=True, text=True,
+            )
+            if result.returncode == 0:
+                return
+            problem = result.stderr.strip()
+        except FileNotFoundError:
+            problem = "sox isn't installed (sudo apt install sox)"
+        print(f"(Voice effect skipped: {problem})")
+    os.replace(in_path, out_path)
+
+
+_piper_voice = None
+
+
+def _load_piper():
+    global _piper_voice
+    if _piper_voice is None:
+        from piper import PiperVoice  # imported here so other engines don't need it
+
+        model = VOICES_DIR / f"{PIPER_VOICE}.onnx"
+        if not model.exists():
+            print(f"Downloading Piper voice {PIPER_VOICE} (one time only)...")
+            subprocess.run(
+                [sys.executable, "-m", "piper.download_voices", PIPER_VOICE,
+                 "--data-dir", str(VOICES_DIR)],
+                check=True,
+            )
+        _piper_voice = PiperVoice.load(str(model))
+    return _piper_voice
+
+
+def _speak_piper(text: str, out_path: str) -> None:
+    from piper import SynthesisConfig
+
+    voice = _load_piper()
+    with wave.open(out_path, "wb") as f:
+        voice.synthesize_wav(text, f, syn_config=SynthesisConfig(length_scale=SPEED))
 
 
 def _speak_gemini(model: str, text: str, out_path: str) -> None:

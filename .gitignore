@@ -15,6 +15,9 @@ venv/
 *.mp3
 recordings/
 
+# Downloaded Piper voice files (big; re-downloaded automatically)
+voices/
+
 # Mac / editor clutter
 .DS_Store
 .vscode/

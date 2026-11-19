@@ -25,6 +25,7 @@ def main() -> None:
     speaker = audio.find_usb_card("aplay")
     button = Button(BUTTON_PIN, bounce_time=0.05)
     recorder = audio.Recorder(mic, QUESTION_WAV)
+    brain.warm_up()
 
     print(f"Chad is ready (chat: {brain.CHAT_MODEL}). Hold the button and talk.")
     while True:

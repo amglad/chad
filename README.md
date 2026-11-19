@@ -1,6 +1,6 @@
 # Chad
 
-A voice-only talking action figure. Hold the button, talk, let go, and Chad answers out loud.
+A voice-only talking alien plush. Hold the button, talk, let go, and Chad answers out loud.
 
 **Hardware:** Raspberry Pi 3 Model B, USB microphone, USB speaker, push button on GPIO17 (pin 11), power bank.
 **Software:** Python on Raspberry Pi OS, with Google Gemini for hearing, answering (with Google Search) and talking.
@@ -16,7 +16,7 @@ A voice-only talking action figure. Hold the button, talk, let go, and Chad answ
 
 ```bash
 sudo apt update
-sudo apt install -y git python3-venv alsa-utils espeak-ng
+sudo apt install -y git python3-venv alsa-utils espeak-ng sox
 git clone <this repo> ~/chad
 cd ~/chad
 python3 -m venv --system-site-packages .venv   # project Python that can still see the Pi's GPIO library
@@ -63,4 +63,4 @@ Hold the button and talk, let go, and it plays your voice back. Ctrl+C quits.
 3. Hold the button, ask something, let go.
 
 Files: `chad.py` is the main loop, `brain.py` talks to Gemini (the only file to change to switch AI providers), `audio.py` handles the mic and speaker.
-If Gemini's voice fails (for example, a free-tier limit), Chad falls back to the free offline `espeak-ng` voice.
+Chad's voice comes from Piper (free, runs on the Pi) with an alien effect from `sox`. Change `VOICE_EFFECT` in `.env` to try other sounds. If Piper fails, Chad falls back to the `espeak-ng` robot voice.
