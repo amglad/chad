@@ -35,7 +35,7 @@ TTS_ENGINE = os.getenv("TTS_ENGINE", "piper")  # "piper", "gemini" or "espeak"
 
 # Piper voice (list: https://rhasspy.github.io/piper-samples/). "-low" voices
 # are faster on a Pi 3, "-medium" ones sound nicer.
-PIPER_VOICE = os.getenv("PIPER_VOICE", "en_US-lessac-medium")
+PIPER_VOICE = os.getenv("PIPER_VOICE", "en_US-ryan-medium")
 SPEED = float(os.getenv("SPEED", "1.0"))  # bigger = slower speech
 VOICES_DIR = Path(__file__).parent / "voices"
 
@@ -43,9 +43,16 @@ VOICES_DIR = Path(__file__).parent / "voices"
 # or write your own sox effect list. "pitch" is in cents (100 = one semitone).
 EFFECT_PRESETS = {
     "none": "",
-    "alien": "pitch 400 chorus 0.6 0.9 50 0.4 0.25 2 -t",
+    # A bit lower than normal, with a swirly metallic shimmer.
+    "alien": "pitch -250 flanger 0 2 0 71 0.5 sine 25 linear "
+             "chorus 0.6 0.9 50 0.4 0.25 2 -t",
+    # Much lower and spacey, like a big alien in a big ship.
+    "deep": "pitch -500 phaser 0.89 0.85 1 0.24 2 -t reverb 30",
+    # Lower, with a slow warble and a short echo.
+    "warble": "pitch -300 tremolo 5 30 echo 0.8 0.7 40 0.25",
+    # The original higher-pitched alien.
+    "squeaky": "pitch 400 chorus 0.6 0.9 50 0.4 0.25 2 -t",
     "wobbly": "pitch 500 tremolo 6 40 chorus 0.6 0.9 50 0.4 0.25 2 -t",
-    "deep": "pitch -350 phaser 0.89 0.85 1 0.24 2 -t reverb 30",
     "tiny": "pitch 700 echo 0.8 0.8 20 0.3",
 }
 VOICE_EFFECT = os.getenv("VOICE_EFFECT", "alien")
