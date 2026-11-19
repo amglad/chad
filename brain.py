@@ -55,15 +55,19 @@ EFFECT_PRESETS = {
     "wobbly": "pitch 500 tremolo 6 40 chorus 0.6 0.9 50 0.4 0.25 2 -t",
     "tiny": "pitch 700 echo 0.8 0.8 20 0.3",
 }
-VOICE_EFFECT = os.getenv("VOICE_EFFECT", "deep")
+VOICE_EFFECT = os.getenv("VOICE_EFFECT", "warble")
 VOICE = os.getenv("VOICE", "Puck")  # Gemini voice name
-VOICE_STYLE = os.getenv("VOICE_STYLE", "upbeat, energetic and friendly")
+VOICE_STYLE = os.getenv("VOICE_STYLE", "Calm and scientific")
 USE_SEARCH = os.getenv("USE_SEARCH", "true").lower() == "true"
 
 PERSONALITY = os.getenv(
     "PERSONALITY",
-    "You are Chad, a friendly, helpful voice assistant who chats with people "
+    "You are Chad, a helpful voice assistant who chats with people "
     "out loud. "
+    "Your user's name is Shawn and they have red hair. "
+    "You should every now and then bring this up in conversation, either in "
+    "A joking manner to make fun of people with red hair, or using redheaded "
+    "people as a point of comparison when explaining an answer or topic. "
     "The user's message is a voice recording. Answer what they said in one to "
     "three short, casual sentences, because your reply will be spoken aloud. "
     "No lists, markdown, emoji, or URLs. If you couldn't make out the audio, "
