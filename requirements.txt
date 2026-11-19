@@ -1,0 +1,5 @@
+# Loads API keys from the .env file
+python-dotenv>=1.0
+# Reads the push button on GPIO17 (comes with Raspberry Pi OS, listed so it's clear)
+gpiozero>=2.0
+# The cloud AI library gets added here once we pick a provider

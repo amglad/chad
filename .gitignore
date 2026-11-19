@@ -1,0 +1,20 @@
+# Secrets: never commit these
+.env
+*.key
+*.pem
+secrets/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Audio recordings made while testing
+*.wav
+*.mp3
+recordings/
+
+# Mac / editor clutter
+.DS_Store
+.vscode/
