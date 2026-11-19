@@ -12,8 +12,13 @@ import wave
 from google import genai
 from google.genai import types
 
-CHAT_MODEL = os.getenv("CHAT_MODEL", "gemini-2.5-flash")
-TTS_MODEL = os.getenv("TTS_MODEL", "gemini-2.5-flash-preview-tts")
+CHAT_MODEL = os.getenv("CHAT_MODEL", "gemini-3.5-flash-lite")
+TTS_MODEL = os.getenv("TTS_MODEL", "gemini-3.8-flash-lite-tts")
+# How hard the model "thinks" before answering. Less = faster replies.
+# Flash-Lite models accept "minimal"; gemini-3.8-flash needs "low" or higher.
+THINKING_LEVEL = os.getenv(
+    "THINKING_LEVEL", "minimal" if "lite" in CHAT_MODEL else "low"
+)
 TTS_ENGINE = os.getenv("TTS_ENGINE", "gemini")  # "gemini" or "espeak"
 VOICE = os.getenv("VOICE", "Puck")  # Gemini voice name
 USE_SEARCH = os.getenv("USE_SEARCH", "true").lower() == "true"
@@ -32,13 +37,26 @@ client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
 def think(wav_bytes: bytes) -> str:
     """Send the recording to Gemini and get Chad's reply as text."""
-    config = types.GenerateContentConfig(system_instruction=PERSONALITY)
+    global USE_SEARCH
     if USE_SEARCH:
+        try:
+            return _ask(wav_bytes, with_search=True)
+        except Exception as error:
+            # Google Search isn't included on every plan (e.g. some free tiers).
+            # Turn it off for the rest of this run and answer without it.
+            print(f"(Google Search unavailable, continuing without it: {error})")
+            USE_SEARCH = False
+    return _ask(wav_bytes, with_search=False)
+
+
+def _ask(wav_bytes: bytes, with_search: bool) -> str:
+    config = types.GenerateContentConfig(
+        system_instruction=PERSONALITY,
+        thinking_config=types.ThinkingConfig(thinking_level=THINKING_LEVEL),
+    )
+    if with_search:
         # Lets Gemini look things up on Google for current events.
         config.tools = [types.Tool(google_search=types.GoogleSearch())]
-    if CHAT_MODEL.startswith("gemini-2.5"):
-        # Skip "thinking" for faster, cheaper answers (fine for small talk).
-        config.thinking_config = types.ThinkingConfig(thinking_budget=0)
 
     response = client.models.generate_content(
         model=CHAT_MODEL,

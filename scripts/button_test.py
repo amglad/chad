@@ -4,6 +4,7 @@ Wiring: red -> pin 1 (3.3V), black -> pin 9 (GND), white -> pin 11 (GPIO17).
 Run it from the repo folder:  python scripts/button_test.py   (Ctrl+C to quit)
 """
 
+import signal
 import subprocess
 import sys
 import time
@@ -38,7 +39,7 @@ def main() -> None:
         )
 
         button.wait_for_release()
-        recorder.terminate()  # like pressing Ctrl+C on arecord
+        recorder.send_signal(signal.SIGINT)  # like pressing Ctrl+C on arecord
         recorder.wait()
         held = time.monotonic() - started
 

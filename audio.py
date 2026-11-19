@@ -1,6 +1,7 @@
 """Mic and speaker helpers for Chad (wraps the arecord/aplay command-line tools)."""
 
 import re
+import signal
 import subprocess
 
 
@@ -32,7 +33,8 @@ class Recorder:
         )
 
     def stop(self) -> None:
-        self.process.terminate()  # same as pressing Ctrl+C on arecord
+        # Same as pressing Ctrl+C on arecord: it finishes the WAV file cleanly.
+        self.process.send_signal(signal.SIGINT)
         self.process.wait()
 
 
