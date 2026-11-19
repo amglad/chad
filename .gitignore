@@ -18,6 +18,9 @@ recordings/
 # Downloaded Piper voice files (big; re-downloaded automatically)
 voices/
 
+# Chad's saved speaker volume
+.volume
+
 # Mac / editor clutter
 .DS_Store
 .vscode/

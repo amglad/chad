@@ -18,6 +18,7 @@ import sounds  # noqa: E402
 
 BUTTON_PIN = 17      # GPIO17 = physical pin 11
 MIN_SECONDS = 0.4    # ignore accidental taps
+VOLUME_STEP = 15    # how much "louder" / "quieter" changes the volume
 QUESTION_WAV = "/tmp/chad_question.wav"
 ANSWER_WAV = "/tmp/chad_answer.wav"
 
@@ -35,11 +36,25 @@ def shut_down(speaker: int) -> None:
     raise SystemExit(0)
 
 
+def change_volume(speaker: int, command: str) -> None:
+    """Handle VOLUME_UP, VOLUME_DOWN and VOLUME=NN commands."""
+    current = audio.get_volume(speaker)
+    if command == "VOLUME_UP":
+        new = current + VOLUME_STEP
+    elif command == "VOLUME_DOWN":
+        new = current - VOLUME_STEP
+    else:  # "VOLUME=70"
+        new = int(command.split("=")[1])
+    new = audio.set_volume(speaker, max(new, 10))  # never fully silent by voice
+    print(f"Volume {current}% -> {new}%")
+
+
 def main() -> None:
     mic = audio.find_usb_card("arecord")
     speaker = audio.find_usb_card("aplay")
     button = Button(BUTTON_PIN, bounce_time=0.05)
     recorder = audio.Recorder(mic, QUESTION_WAV)
+    audio.restore_volume(speaker)
     brain.warm_up()
 
     print(f"Chad is ready (chat: {brain.CHAT_MODEL}). Hold the button and talk.")
@@ -61,14 +76,17 @@ def main() -> None:
             t0 = time.monotonic()
             with open(QUESTION_WAV, "rb") as f:
                 reply = brain.think(f.read())
-            goodnight = brain.SHUTDOWN_WORD in reply
-            reply = reply.replace(brain.SHUTDOWN_WORD, "").strip()
+            reply, commands = brain.split_commands(reply)
             print(f"Chad: {reply}")
+            for command in commands:
+                if command.startswith("VOLUME"):
+                    # Change volume before he answers, so you hear the new level.
+                    change_volume(speaker, command)
             t1 = time.monotonic()
             brain.speak(reply, ANSWER_WAV)
             print(f"(think {t1 - t0:.1f}s, voice {time.monotonic() - t1:.1f}s)")
             audio.play(speaker, ANSWER_WAV)
-            if goodnight:
+            if "GOODNIGHT" in commands:
                 shut_down(speaker)
         except Exception as error:
             # Keep Chad running even if one request fails (Wi-Fi blip, quota, ...).

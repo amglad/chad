@@ -72,6 +72,9 @@ python volume.py 60   # set to 60% (0 to 100) and save it
 python volume.py      # show the current volume
 ```
 
+Chad saves the level and sets it again every time he starts. You can also just ask him:
+"speak louder", "turn it down", or "volume 70".
+
 ## Start Chad automatically at boot
 
 ```bash

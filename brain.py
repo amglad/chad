@@ -10,6 +10,7 @@ through the `sox` audio tool to make it sound like an alien.
 
 import base64
 import os
+import re
 import subprocess
 import sys
 import wave
@@ -62,14 +63,27 @@ PERSONALITY = os.getenv(
     "say so playfully and ask them to try again.",
 )
 
-# Gemini adds this word to its reply when you say goodnight, so chad.py knows
-# to shut down. (Gemini hears the audio directly, so it does the listening.)
-SHUTDOWN_WORD = "[GOODNIGHT]"
-SHUTDOWN_RULE = (
-    " Only if the user is clearly saying goodnight to you, or asking you to "
-    "shut down or power off, reply with a short, warm goodbye and end your "
-    f"reply with {SHUTDOWN_WORD}. Never use {SHUTDOWN_WORD} otherwise."
+# Voice commands. Gemini hears the audio directly, so it does the listening:
+# when it hears a command it adds a tag like [VOLUME_UP] to its reply, and
+# chad.py acts on the tag (and removes it before Chad speaks).
+COMMAND_RULES = (
+    " Special commands, used only when the user clearly asks for them:"
+    " If they say goodnight to you, or ask you to shut down or power off, reply"
+    " with a short, warm goodbye and end your reply with [GOODNIGHT]."
+    " If they ask you to speak louder or turn the volume up, briefly confirm and"
+    " end with [VOLUME_UP]. If they ask you to be quieter or turn it down, end"
+    " with [VOLUME_DOWN]. If they ask for a specific level, like 'volume 70' or"
+    " 'max volume', end with [VOLUME=70] using a number from 0 to 100."
+    " Never use these tags otherwise."
 )
+COMMAND_PATTERN = re.compile(r"\[(GOODNIGHT|VOLUME_UP|VOLUME_DOWN|VOLUME=\d{1,3})\]")
+
+
+def split_commands(reply: str) -> tuple[str, list[str]]:
+    """Pull command tags out of a reply: ("Sure!", ["VOLUME_UP"])."""
+    commands = COMMAND_PATTERN.findall(reply)
+    return COMMAND_PATTERN.sub("", reply).strip(), commands
+
 
 client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
@@ -90,7 +104,7 @@ def think(wav_bytes: bytes) -> str:
 
 def _ask(wav_bytes: bytes, with_search: bool) -> str:
     config = types.GenerateContentConfig(
-        system_instruction=PERSONALITY + SHUTDOWN_RULE,
+        system_instruction=PERSONALITY + COMMAND_RULES,
         thinking_config=types.ThinkingConfig(thinking_level=THINKING_LEVEL),
     )
     if with_search:
