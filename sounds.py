@@ -13,42 +13,43 @@ RATE = 22050  # samples per second
 SOUNDS_DIR = Path(__file__).parent / "sounds"
 
 
-def _tone(seconds, freq_at, volume=0.45, attack=0.03, release=0.15):
-    """Make a tone whose pitch follows freq_at(t). Returns a list of samples."""
-    samples, phase = [], 0.0
+def _ufo_chime():
+    """A calm, spooky UFO slowly coming down to land."""
+    seconds = 3.0
     total = int(seconds * RATE)
+    out = [0.0] * total
+    phase_a = phase_b = phase_hum = 0.0
+
     for i in range(total):
         t = i / RATE
-        phase += 2 * math.pi * freq_at(t) / RATE
-        # Fade in and out so it doesn't click.
-        env = min(1.0, t / attack, (seconds - t) / release)
-        # A little second harmonic makes it sound less like a plain beep.
-        value = math.sin(phase) + 0.25 * math.sin(2 * phase)
-        samples.append(volume * env * value / 1.25)
-    return samples
+        # Glide down from 1100 Hz to 400 Hz, slowing as it "lands" (ease-out).
+        progress = min(1.0, t / 2.4)
+        ease = 1 - (1 - progress) ** 3
+        pitch = 1100 * (400 / 1100) ** ease
+        # Slow, wide wobble like an old sci-fi theremin.
+        pitch *= 1 + 0.025 * math.sin(2 * math.pi * 5 * t)
 
+        # Two slightly out-of-tune copies "beat" against each other: eerie shimmer.
+        phase_a += 2 * math.pi * pitch / RATE
+        phase_b += 2 * math.pi * (pitch + 2.5) / RATE
+        voice = 0.5 * (math.sin(phase_a) + math.sin(phase_b))
 
-def _silence(seconds):
-    return [0.0] * int(seconds * RATE)
+        # Low, slowly pulsing hum underneath (the ship's engine).
+        phase_hum += 2 * math.pi * 82 / RATE
+        hum = 0.35 * math.sin(phase_hum) * (0.6 + 0.4 * math.sin(2 * math.pi * 0.8 * t))
 
+        # Soft fade in, long gentle fade out.
+        env = min(1.0, t / 0.4, (seconds - t) / 1.2)
+        out[i] = env * (0.7 * voice + hum)
 
-def _ufo_chime():
-    # 1) Theremin-style sweep up with a wobble, like a UFO powering on.
-    def sweep(t):
-        rise = 350 * (1100 / 350) ** (t / 0.9)       # glide 350 Hz -> 1100 Hz
-        return rise * (1 + 0.04 * math.sin(2 * math.pi * 9 * t))  # 9 Hz wobble
+    # Add a couple of quiet echoes for a spacey feel.
+    for delay, level in [(0.22, 0.35), (0.44, 0.15)]:
+        d = int(delay * RATE)
+        for i in range(total - 1, d - 1, -1):
+            out[i] += level * out[i - d]
 
-    # 2) Two quick "bloops" at the end.
-    def bloop(start, end):
-        return lambda t: start + (end - start) * (t / 0.12)
-
-    return (
-        _tone(0.9, sweep, release=0.25)
-        + _silence(0.05)
-        + _tone(0.12, bloop(1100, 1500), release=0.06)
-        + _silence(0.04)
-        + _tone(0.18, bloop(1500, 2000), release=0.12)
-    )
+    peak = max(abs(x) for x in out)
+    return [0.45 * x / peak for x in out]
 
 
 def _write_wav(path, samples):
@@ -62,7 +63,8 @@ def _write_wav(path, samples):
 
 def ready_chime() -> str:
     path = SOUNDS_DIR / "ready.wav"
-    if not path.exists():
+    # Rebuild if missing, or if this file changed since it was made.
+    if not path.exists() or path.stat().st_mtime < Path(__file__).stat().st_mtime:
         _write_wav(path, _ufo_chime())
     return str(path)
 
